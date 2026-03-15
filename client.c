@@ -11,6 +11,8 @@ https://learn.microsoft.com/en-us/windows/win32/winsock/complete-client-code
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "./tests/tests.h"
+
 #pragma comment(lib, "Ws2_32.lib")
 
 #define DEFAULT_PORT "27015"
@@ -79,19 +81,23 @@ int main (int argc, char *argv[])
 
   // ************ SENDING AND RECEIVING DATA ON THE CLIENT **********
   int recvbuflen = DEFAULT_BUFLEN;
-  const char *sendbuf = "this is a test";
+  // const char *sendbuf = "this is a test";
   char recvbuf[DEFAULT_BUFLEN];
 
   // send an initial buffer
-  iresult = send(ConnectSocket, sendbuf, (int) strlen(sendbuf), 0);
-  if (iresult == SOCKET_ERROR) {
-    printf("send failed: %d\n", WSAGetLastError());
-    closesocket(ConnectSocket);
-    WSACleanup();
-    exit(EXIT_FAILURE);
-  }
 
-  printf("Bytes sent: %ld\n", iresult);
+  for (int i = 0; i < tests_amount; i++) {
+    iresult = send(ConnectSocket, test_reqs[i], (int) strlen(test_reqs[i]), 0);
+    if (iresult == SOCKET_ERROR) {
+      printf("send failed: %d\n", WSAGetLastError());
+      closesocket(ConnectSocket);
+      WSACleanup();
+      exit(EXIT_FAILURE);
+    }
+  
+    printf("Bytes sent: %ld\n", iresult);
+  }
+  
 
   // ************* DISCONNECTING THE CLIENT ************
   // shutdown the connection for sending since no more data will be sent 
@@ -110,6 +116,7 @@ int main (int argc, char *argv[])
     
     if (result > 0) {
       printf("Bytes received: %d\n", iresult);
+      printf("%s", recvbuf);
     } else if (iresult == 0) {
       printf("Connection closed\n");
     } else {
