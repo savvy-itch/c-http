@@ -1,3 +1,9 @@
+#ifndef GLOBALS_H
+#define GLOBALS_H
+
+#define DEFAULT_BUFLEN 512
+#define HTTP_V 1.1f
+
 typedef struct {
   int status_code;
   char *reason_phrase;
@@ -10,3 +16,5 @@ extern const int ar_size;
 extern const StatusCodes supported_statuses[];
 extern const int st_size;
 extern const int ss_size;
+
+#endif

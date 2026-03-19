@@ -1,7 +1,15 @@
 # C-HTTP
 
-HTTP/1.1. server written in C.
+HTTP/1.1. server written in C. Supported methods:
+- GET
+- HEAD
 
-`
-gcc server.c -o server -lws2_32
-`
+To compile the server:
+```
+make server
+```
+
+To compile clientserver:
+```
+make client
+```

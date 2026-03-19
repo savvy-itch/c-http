@@ -1,4 +1,4 @@
-#include "globals.h"
+#include "include\globals.h"
 
 const char *allowed_methods[] = {"GET", "HEAD"};
 const char *allowed_resources[] = {"/", "/about"};
