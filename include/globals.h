@@ -5,7 +5,7 @@
 #define HTTP_V 1.1f
 
 typedef struct {
-  int status_code;
+  short status_code;
   char *reason_phrase;
 } StatusCodes;
 

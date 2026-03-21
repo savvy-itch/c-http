@@ -2,7 +2,7 @@
 
 const char *test_reqs[] = {
   // VALID
-  "GET / HTTP/1.1\r\n",
+  "GET /about HTTP/1.1\r\n",
   // missing HTTP version
   "GET /path/to/resource\r\n",
   // wrong method (POST instead of GET)

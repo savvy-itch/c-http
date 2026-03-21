@@ -18,6 +18,14 @@ https://learn.microsoft.com/en-us/windows/win32/winsock/complete-client-code
 #define DEFAULT_PORT "27015"
 #define DEFAULT_BUFLEN 512
 
+/*
+GET http://localhost:27015/aboutHT9P/1.1\r\n
+GOT http://localhost:27015/about HTTP/1.1\r\n
+TOOLONGMETHODTOOLONGMETHOD http://localhost:27015/about HTTP/1.1\r\n
+HEAD /about HTTP/1.1\r\nHost: localhost:27015\r\n\r\n
+*/
+
+
 static int init_socket(char *server_name, struct addrinfo **result);
 // static int connect_to_socket(SOCKET *ConnectSocket, struct addrinfo **result);
 
@@ -55,7 +63,7 @@ int main (int argc, char *argv[])
     // Create a SOCKET for connecting to server
     ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
     if (ConnectSocket == INVALID_SOCKET) {
-      printf("Error at socket(): %ld\n", WSAGetLastError());
+      printf("Error at socket(): %d\n", WSAGetLastError());
       freeaddrinfo(result);
       WSACleanup();
       exit(EXIT_FAILURE);
@@ -81,22 +89,31 @@ int main (int argc, char *argv[])
 
   // ************ SENDING AND RECEIVING DATA ON THE CLIENT **********
   int recvbuflen = DEFAULT_BUFLEN;
-  // const char *sendbuf = "this is a test";
+  const char *sendbuf = "HEAD /about HTTP/1.1\r\nHost: localhost:27015\r\n\r\n";
+  const int send_len = strlen(sendbuf); 
   char recvbuf[DEFAULT_BUFLEN];
 
-  // send an initial buffer
-
-  for (int i = 0; i < tests_amount; i++) {
-    iresult = send(ConnectSocket, test_reqs[i], (int) strlen(test_reqs[i]), 0);
-    if (iresult == SOCKET_ERROR) {
-      printf("send failed: %d\n", WSAGetLastError());
-      closesocket(ConnectSocket);
-      WSACleanup();
-      exit(EXIT_FAILURE);
-    }
-  
-    printf("Bytes sent: %ld\n", iresult);
+  iresult = send(ConnectSocket, sendbuf, send_len, 0);
+  if (iresult == SOCKET_ERROR) {
+    printf("send failed: %d\n", WSAGetLastError());
+    closesocket(ConnectSocket);
+    WSACleanup();
+    exit(EXIT_FAILURE);
   }
+
+  printf("Bytes sent: %d\n", iresult);
+
+  // for (int i = 0; i < tests_amount; i++) {
+  //   iresult = send(ConnectSocket, test_reqs[i], (int) strlen(test_reqs[i]), 0);
+  //   if (iresult == SOCKET_ERROR) {
+  //     printf("send failed: %d\n", WSAGetLastError());
+  //     closesocket(ConnectSocket);
+  //     WSACleanup();
+  //     exit(EXIT_FAILURE);
+  //   }
+  
+  //   printf("Bytes sent: %ld\n", iresult);
+  // }
   
 
   // ************* DISCONNECTING THE CLIENT ************
@@ -114,7 +131,7 @@ int main (int argc, char *argv[])
   do {
     iresult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
     
-    if (result > 0) {
+    if (iresult > 0) {
       printf("Bytes received: %d\n", iresult);
       printf("%s", recvbuf);
     } else if (iresult == 0) {

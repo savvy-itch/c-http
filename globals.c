@@ -10,6 +10,7 @@ const StatusCodes supported_statuses[] = {
   { 400, "Bad Request" },
   { 404, "Not Found" },
   { 405, "Method Not Allowed" },
+  { 413, "Content Too Large"},
   { 414, "URI Too Long" },
   { 418, "I'm a teapot" },
   { 500, "Internal Server Error" },
