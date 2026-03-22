@@ -9,7 +9,7 @@ To compile the server:
 make server
 ```
 
-To compile clientserver:
+To compile client:
 ```
 make client
 ```

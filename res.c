@@ -6,7 +6,8 @@
 
 static int status_cmp(void const *lhs, void const *rhs);
 static int send_data(SOCKET *ClientSocket, const char *data_buf);
-// static char *get_content(char *resource);
+static char *get_content(const char *resource);
+static char *read_file(const char *file_path);
 
 int handle_res(SOCKET *ClientSocket, ReqLine *req_line, const short status_code)
 {
@@ -66,7 +67,7 @@ int handle_res(SOCKET *ClientSocket, ReqLine *req_line, const short status_code)
         printf("X Response error: insufficient memory\n");
         return 1;
       }
-      strcpy(res_body, "<h1>Hello from server</h1>");
+      res_body = get_content(req_line->target);
       break;
     default:
       res_body = malloc(rp_len + 20);
@@ -138,22 +139,51 @@ static int send_data(SOCKET *ClientSocket, const char *data_buf)
   return 0;
 }
 
-// static char *get_content(char *resource)
-// {
-//   FILE *fp;
+static char *get_content(const char *resource)
+{
+  if (strcmp(resource, "/") == 0) {
+    return read_file("tests/index.html");
+  }
+  if (strcmp(resource, "/about") == 0) {
+    return read_file("tests/about.html");
+  }
+  return NULL;
+}
 
-//   if (strcmp(resource, "/") == 0) {
-//     if (!(fp = fopen("index.html", "r"))) {
-//       fprintf(stderr, "Couldn't open index.html\n");
-//       return NULL;
-//     }
+static char *read_file(const char *file_path)
+{
+  FILE *fp;
+  if (!(fp = fopen(file_path, "rb"))) {
+    fprintf(stderr, "Couldn't open file\n");
+    return NULL;
+  }
 
-//     // char *buf = malloc();
+  int base_size = 100;
+  char *buf = malloc(base_size);
+  if (!buf) {
+    fclose(fp);
+    fprintf(stderr, "Insufficient memory\n");
+    return NULL;
+  }
+  
+  int ch, i = 0, buf_size = base_size;
+  while ((ch = getc(fp)) != EOF) {
+    if (i+1 >= buf_size) {
+      buf_size += base_size;
+      char *tmp = realloc(buf, buf_size);
+      if (!tmp) {
+        fclose(fp);
+        fprintf(stderr, "Insufficient memory\n");
+        return NULL;
+      }
+      buf = tmp;
+    }
 
-//     fclose(fp);
-//   } else if (strcmp(resource, "/about") == 0) {
+    buf[i++] = ch;
+  }
 
-//   } else {
-//     return NULL;
-//   }
-// }
+  buf[i] = '\0';
+
+  fclose(fp);
+  return buf;
+}
