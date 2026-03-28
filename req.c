@@ -15,7 +15,11 @@ static int parse_req_line(const char *recvbuf,
 static bool is_valid_req_line(ReqLine *req_msg, short *cur_status);
 static int parse_headers(const char ch, headers_state *cur_headers_state, char *cur_header_name, char *cur_field_val, int *j, short *cur_status);
 
-int handle_req(SOCKET *ClientSocket)
+/*
+- HTTP/1.1 defaults to persistent connections
+*/
+
+int handle_req(SOCKET *ClientSocket, bool *keep_alive)
 {
   char recvbuf[DEFAULT_BUFLEN];
   int recvbuflen = DEFAULT_BUFLEN, iresult, i = 0, j = 0;
@@ -30,12 +34,13 @@ int handle_req(SOCKET *ClientSocket)
   req_msg.protocol_name[0] = '\0';
   req_msg.http_v = HTTP_V;
   short cur_status = 501;
+  // bool keep_alive = true;
   
   // Receive until the peer shuts down the connection
   do {
     iresult = recv(*ClientSocket, recvbuf, recvbuflen, 0);
-    printf("--------\n");
-    printf("Raw: %s\n", recvbuf);
+    // printf("--------\n");
+    // printf("Raw: %s\n", recvbuf);
     i = 0;
 
     if (iresult > 0) {
@@ -45,14 +50,14 @@ int handle_req(SOCKET *ClientSocket)
         if (cur_state != REQ_LINE_COMPLETE) {
           int res = parse_req_line(recvbuf, &i, &cur_state, &req_msg, &j, &cur_status);
           if (res != 0) {
-            handle_res(ClientSocket, &req_msg, cur_status);
+            handle_res(ClientSocket, &req_msg, &cur_status);
             return 1;
           }
 
           if (cur_state == REQ_LINE_COMPLETE) {
             j = 0;
             if (!is_valid_req_line(&req_msg, &cur_status)) {
-              handle_res(ClientSocket, &req_msg, cur_status);
+              handle_res(ClientSocket, &req_msg, &cur_status);
               return 1;
             }
             printf("+ Request-line validated\n");
@@ -75,8 +80,9 @@ int handle_req(SOCKET *ClientSocket)
           if (recvbuf[i] == '\n') {
             printf("+ Headers end reached. Ready to send response...\n");
             // Host field is required
+            printf("%s\n", *keep_alive ? "keep-alive" : "close");
             cur_status = headers.host[0] == '\0' ? 400 : 200;
-            if (handle_res(ClientSocket, &req_msg, cur_status) != 0) {
+            if (handle_res(ClientSocket, &req_msg, &cur_status) != 0) {
               printf("X An error occured while sending response\n");
               return 1;
             }
@@ -93,7 +99,7 @@ int handle_req(SOCKET *ClientSocket)
             headers.host[0] = '\0';
           } else {
             cur_status = 400;
-            handle_res(ClientSocket, &req_msg, cur_status);
+            handle_res(ClientSocket, &req_msg, &cur_status);
             return 1;
           }
         } else if (cur_headers_state != FIELD_LINE_READ) {
@@ -104,15 +110,17 @@ int handle_req(SOCKET *ClientSocket)
           if (cur_headers_state == FIELD_LINE_READ) {
             if (strcmp(cur_header_name, "Host") == 0) {
               strcpy(headers.host, cur_field_val);
-              cur_field_val[0] = '\0';
+            } else if (strcmp(cur_header_name, "Connection") == 0) {
+              if (strcmp(cur_field_val, "close") == 0) {
+                *keep_alive = false;
+              }
             }
+            cur_field_val[0] = '\0';
           }
         }
         i++;
       }
-    } else if (iresult == 0) {
-      printf("connection closing...\n");
-    } else {
+    } else if (iresult < 0) {
       printf("recv failed with error: %d\n", WSAGetLastError());
       return iresult;
     }
@@ -211,18 +219,32 @@ static int parse_req_line(const char *recvbuf,
 
 static bool is_valid_req_line(ReqLine *req_msg, short *cur_status)
 {
-  // "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE"
   // validate method
   bool found_match = false;
   for (short int i = 0; i < am_size; i++) {
     if (strcmp(allowed_methods[i], req_msg->method) == 0) {
       found_match = true;
+      break;
     }
   }
 
   if (!found_match) {
     *cur_status = 400;
-    printf("X 400 Request-line error: invalid method %s.\n", req_msg->method);
+    printf("X 400 Request-line error: invalid method %s\n", req_msg->method);
+    return false;
+  }
+
+  found_match = false;
+  for (short int i = 0; i < im_size; i++) {
+    if (strcmp(implemented_methods[i], req_msg->method) == 0) {
+      found_match = true;
+      break;
+    }
+  }
+
+  if (!found_match) {
+    *cur_status = 501;
+    printf("X 501 Request-line error: unsupported method %s\n", req_msg->method);
     return false;
   }
 

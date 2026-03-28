@@ -10,8 +10,10 @@ typedef struct {
 } StatusCodes;
 
 extern const char *allowed_methods[];
+extern const char *implemented_methods[];
 extern const char *allowed_resources[];
 extern const short int am_size;
+extern const short int im_size;
 extern const int ar_size;
 extern const StatusCodes supported_statuses[];
 extern const int st_size;

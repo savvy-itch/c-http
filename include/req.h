@@ -39,5 +39,5 @@ typedef struct {
   char host[MAX_FIELD_VAL_LEN+1];
 } RequiredFields;
 
-int handle_req(SOCKET *ClientSocket);
+int handle_req(SOCKET *ClientSocket, bool *keep_alive);
 #endif

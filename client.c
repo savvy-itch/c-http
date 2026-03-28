@@ -22,7 +22,10 @@ https://learn.microsoft.com/en-us/windows/win32/winsock/complete-client-code
 GET http://localhost:27015/aboutHT9P/1.1\r\n
 GOT http://localhost:27015/about HTTP/1.1\r\n
 TOOLONGMETHODTOOLONGMETHOD http://localhost:27015/about HTTP/1.1\r\n
-HEAD /about HTTP/1.1\r\nHost: localhost:27015\r\n\r\n
+HEAD /about HTTP/1.1\r\nHost: localhost:27015\r\n\Connection: close\r\n\r\n
+GET /about HTTP/1.1\r\nHost: localhost:27015\r\n\Connection: keep-alive\r\n\r\n
+TRACE / HTTP/1.1\r\nHost: localhost:27015\r\n\Connection: close\r\n\r\n
+OPTIONS / HTTP/1.1\r\nHost: localhost:27015\r\nAccept: *//*\r\n\r\n
 */
 
 
@@ -89,7 +92,7 @@ int main (int argc, char *argv[])
 
   // ************ SENDING AND RECEIVING DATA ON THE CLIENT **********
   int recvbuflen = DEFAULT_BUFLEN;
-  const char *sendbuf = "HEAD /about HTTP/1.1\r\nHost: localhost:27015\r\n\r\n";
+  const char *sendbuf = "TRACE / HTTP/1.1\r\nHost: localhost:27015\r\nConnection: close\r\n\r\n";
   const int send_len = strlen(sendbuf); 
   char recvbuf[DEFAULT_BUFLEN];
 
@@ -102,19 +105,6 @@ int main (int argc, char *argv[])
   }
 
   printf("Bytes sent: %d\n", iresult);
-
-  // for (int i = 0; i < tests_amount; i++) {
-  //   iresult = send(ConnectSocket, test_reqs[i], (int) strlen(test_reqs[i]), 0);
-  //   if (iresult == SOCKET_ERROR) {
-  //     printf("send failed: %d\n", WSAGetLastError());
-  //     closesocket(ConnectSocket);
-  //     WSACleanup();
-  //     exit(EXIT_FAILURE);
-  //   }
-  
-  //   printf("Bytes sent: %ld\n", iresult);
-  // }
-  
 
   // ************* DISCONNECTING THE CLIENT ************
   // shutdown the connection for sending since no more data will be sent 

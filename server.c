@@ -51,7 +51,7 @@ int main (void)
   }
 
 
-  // ********** BINDING A SOCKET ************
+  // ********** BINDING A SOCKET TO AN IP ADDRESS AND PORT ************
   iresult = bind(ListenSocket, result->ai_addr, (int) result->ai_addrlen);
   if (iresult == SOCKET_ERROR) {
     printf("bind failed with error: %d\n", WSAGetLastError());
@@ -79,24 +79,28 @@ int main (void)
   SOCKET ClientSocket;
   ClientSocket = INVALID_SOCKET;
 
-  // accept a client socket
-  ClientSocket = accept(ListenSocket, NULL, NULL);
-  if (ClientSocket == INVALID_SOCKET) {
-    printf("accept failed with error: %d\n", WSAGetLastError());
-    closesocket(ListenSocket);
-    WSACleanup();
-    exit(EXIT_FAILURE);
+  bool keep_alive = true;
+  // keep connection persistent unless requested otherwise
+  while (keep_alive) {
+    // accept a client socket
+    ClientSocket = accept(ListenSocket, NULL, NULL);
+    if (ClientSocket == INVALID_SOCKET) {
+      printf("accept failed with error: %d\n", WSAGetLastError());
+      closesocket(ListenSocket);
+      WSACleanup();
+      exit(EXIT_FAILURE);
+    }
+    
+    // ******** RECEIVING AND SENDING DATA ON THE SERVER ********
+    res = handle_req(&ClientSocket, &keep_alive);
+    if (res != 0) {
+      closesocket(ClientSocket);
+      WSACleanup();
+      exit(EXIT_FAILURE);
+    }
   }
 
   closesocket(ListenSocket);
-
-  // ******** RECEIVING AND SENDING DATA ON THE SERVER ************
-  res = handle_req(&ClientSocket);
-  if (res != 0) {
-    closesocket(ClientSocket);
-    WSACleanup();
-    exit(EXIT_FAILURE);
-  }
 
   // *********** DISCONNECTING THE SERVER *************
   iresult = shutdown(ClientSocket, SD_SEND);
